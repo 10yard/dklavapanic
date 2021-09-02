@@ -36,20 +36,41 @@ function dklavapanic.startplugin()
 		if mame_version >= 0.227 then
 			cpu = manager.machine.devices[":maincpu"]
 			scr = manager.machine.screens[":screen"]
-			mem = cpu.spaces["program"]
 		elseif mame_version >= 0.196 then
 			cpu = manager:machine().devices[":maincpu"]
 			scr = manager:machine().screens[":screen"]
-			mem = cpu.spaces["program"]
 		else
 			print("--------------------------------------------------------------")
 			print("The dklavapanic plugin requires MAME version 0.196 or greater.")
 			print("--------------------------------------------------------------")
 		end
+		if cpu ~= nil then
+			mem = cpu.spaces["program"]
+			change_text()
+		end
+	end
+
+	function change_text()
+		-- Change high score text in rom to LAVA PANIC
+		for k, i in pairs({0x1c,0x11,0x26,0x11,0x10,0x20,0x11,0x1e,0x19,0x13}) do
+			mem:write_direct_u8(0x36b4 + k - 1, i)
+		end
+		-- Change "HOW HIGH CAN YOU GET" text in rom to "Help! LAVA IS RISING UP!!"
+		for k, i in pairs({0xdd,0xde,0xdf,0x10,0x1c,0x11,0x26,0x11,0x10,0x19,0x23,0x10,0x22,0x19,0x23,0x19,0x1e,0x17,0x10,0x25,0x20,0x36,0x10}) do
+			mem:write_direct_u8(0x36ce + k - 1, i)
+		end
+	end
+
+	function main()
+		if cpu ~= nil then
+			mode1 = mem:read_i8(0x6005)  -- 1-attract mode, 2-credits entered waiting to start, 3-when playing game
+			mode2 = mem:read_i8(0x600a)  -- Status of note: 7-climb scene, 10-how high, 15-dead, 16-game over
+			stage = mem:read_i8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets, 5-extra/bonus
+			draw_lava()
+		end
 	end
 
 	function draw_lava()
-	
 		-- Before and after gameplay
 		---------------------------------------------------------------------------------
 		if mode2 == 7 or mode2 == 10 or mode2 == 11 or mode2 == 1 then    
@@ -144,16 +165,6 @@ function dklavapanic.startplugin()
 					end
 				end
 			end
-		end
-	end
-
-
-	function main()
-		if mame_version >= 0.196 then
-			mode1 = mem:read_i8(0x6005)  -- 1-attract mode, 2-credits entered waiting to start, 3-when playing game
-			mode2 = mem:read_i8(0x600a)  -- Status of note: 7-climb scene, 10-how high, 15-dead, 16-game over
-			stage = mem:read_i8(0x6227)  -- 1-girders, 2-pie, 3-elevator, 4-rivets, 5-extra/bonus
-			draw_lava()
 		end
 	end
 
