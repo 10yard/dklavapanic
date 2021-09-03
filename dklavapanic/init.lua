@@ -9,7 +9,7 @@
 
 local exports = {}
 exports.name = "dklavapanic"
-exports.version = "0.11"
+exports.version = "0.12"
 exports.description = "Donkey Kong Lava Panic!"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -23,13 +23,13 @@ function dklavapanic.startplugin()
 	local string_len = string.len
 
 	-- Block characters
-	local dkblock = {}
-	dkblock["P"] = "####.#####..#.."
-	dkblock["A"] = "####.#####.##.#"
-	dkblock["N"] = "#..###.######.###..#"
-	dkblock["I"] = "###.#..#..#.###"
-	dkblock["C"] = "####..#..#..###"
-	dkblock["!"] = " # # #   #"
+	local dkblocks = {}
+	dkblocks["P"] = "####.#####..#.."
+	dkblocks["A"] = "####.#####.##.#"
+	dkblocks["N"] = "#..###.######.###..#"
+	dkblocks["I"] = "###.#..#..#.###"
+	dkblocks["C"] = "####..#..#..###"
+	dkblocks["!"] = " # # #   #"
 
 	function initialize()
 		mame_version = tonumber(emu.app_version())
@@ -101,15 +101,15 @@ function dklavapanic.startplugin()
 			version_draw_box(0, 0, lava_y, 224, 0xddff0000, 0x0)
 
 			if mode2 == 12 or (mode1 == 1 and mode2 >= 2 and mode2 <= 3) then
-				jumpman_y = get_jumpman_y()
+				jumpman_y = 264 - mem:read_u8(0x6205)
 				if lava_y + 10 > jumpman_y then
 					-- Dim the screen above lava flow
 					version_draw_box(256, 224, lava_y, 0, 0x66990000, 0x0)
 
 					-- PANIC! text with flashing colour palette for dramatic effect
-					if flash() then
+					if math_fmod(mem:read_u8(0x601a), 32) <= 16 then
 						mem:write_i8(0x7d86, 0)
-						block_text("PANIC!", 128, 16, 0xffEE7511, 0xffffff99)
+						block_characters("PANIC!", 128, 16, 0xffEE7511, 0xffffff99)
 					else
 						mem:write_i8(0x7d86, 1)
 					end
@@ -145,7 +145,7 @@ function dklavapanic.startplugin()
 
 			-- Add dancing flames above lava
 			for _, i in pairs({8, 24, 40, 56, 72, 88, 104, 120, 136, 152, 168, 184, 200, 216}) do
-			  	if flicker() then
+			  	if math_random(3) == 1 then
 					local adjust_y = math_random(-5, 4)
 					local flame_y = lava_y + adjust_y
 					local flame_color = 0xfff4bA15
@@ -176,32 +176,12 @@ function dklavapanic.startplugin()
 		end
 	end
 
-	function get_jumpman_y()
-		-- calculate Jumpman Y position (at top of sprite)
-		local _y = mem:read_i8(0x6205)
-		if _y >= 0 then
-			_y = -256 + _y
-		end
-		-- allow lava to rise to sprite height + 1
-		return 8 - _y
-	end
-
-	function flash()
-		-- Sync timing with the flashing 1UP
-		return math_fmod(mem:read_u8(0x601a), 32) <= 16
-	end
-
-	function flicker()
-		-- Sync the flickering flames
-		return math_random(3) == 1
-	end
-
-	function block_text(text, y, x, color1, color2)
-		-- Write large block characters made up from individual blocks
-		local _dkblock = dkblock
+	function block_characters(text, y, x, color1, color2)
+		-- Write large characters made up from individual blocks
+		local _dkblocks = dkblocks
 		local _y, _x, width, blocks = y, x, 0, ""
 		for i=1, string_len(text) do
-			blocks = _dkblock[string_sub(text, i, i)]
+			blocks = _dkblocks[string_sub(text, i, i)]
 			width = math_floor(string_len(blocks) / 5)
 			for b=1, string_len(blocks) do
 				if string_sub(blocks, b, b) == "#" then
@@ -225,5 +205,6 @@ function dklavapanic.startplugin()
 	end)
 
 	emu.register_frame_done(main, "frame")
+
 end
 return exports

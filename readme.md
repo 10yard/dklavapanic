@@ -1,6 +1,4 @@
-# **Donkey Kong Lava Panic!** #
-
-## A MAME plugin version of DK Lava Panic!
+# **A MAME plugin version of DK Lava Panic** #
 
 Tested with latest MAME version 0.235
 (Compatible with MAME and WolfMAME versions from 0.196 upwards)
