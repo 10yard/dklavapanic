@@ -9,7 +9,7 @@
 
 local exports = {}
 exports.name = "dklavapanic"
-exports.version = "0.1"
+exports.version = "0.11"
 exports.description = "Donkey Kong Lava Panic!"
 exports.license = "GNU GPLv3"
 exports.author = { name = "Jon Wilson (10yard)" }
@@ -73,7 +73,7 @@ function dklavapanic.startplugin()
 	function draw_lava()
 		-- Before and after gameplay
 		---------------------------------------------------------------------------------
-		if mode2 == 7 or mode2 == 10 or mode2 == 11 or mode2 == 1 then    
+		if mode2 == 7 or mode2 == 10 or mode2 == 11 or mode2 == 1 then
 			-- recalculate difficulty at start of level or when in attract mode
 			local level = mem:read_i8(0x6229)
 			lava_difficulty = math_floor(1.2 * (22 - level))
@@ -93,14 +93,14 @@ function dklavapanic.startplugin()
 			-- Reduce lava level on game over screens to avoid obstruction.
 			lava_y = 60
 		end
-		
+
 		-- During gameplay
 		---------------------------------------------------------------------------------
 		if mode1 == 3 or (mode1 == 1 and mode2 >= 2 and mode2 <= 4) then
 			-- Draw rising lava
 			version_draw_box(0, 0, lava_y, 224, 0xddff0000, 0x0)
-			
-			if mode2 == 12 or (mode1 == 1 and mode2 >= 2 and mode2 <= 3) then	
+
+			if mode2 == 12 or (mode1 == 1 and mode2 >= 2 and mode2 <= 3) then
 				jumpman_y = get_jumpman_y()
 				if lava_y + 10 > jumpman_y then
 					-- Dim the screen above lava flow
@@ -108,10 +108,10 @@ function dklavapanic.startplugin()
 
 					-- PANIC! text with flashing colour palette for dramatic effect
 					if flash() then
-						mem:write_i8(0x7d86, 1)
-						block_text("PANIC!", 128, 16, 0xffEE7511, 0xffF5BCA0)
-					else
 						mem:write_i8(0x7d86, 0)
+						block_text("PANIC!", 128, 16, 0xffEE7511, 0xffffff99)
+					else
+						mem:write_i8(0x7d86, 1)
 					end
 
 					-- Temporary change music for added drama
@@ -130,7 +130,7 @@ function dklavapanic.startplugin()
 					-- Reset music
 					mem:write_i8(0x6089, music)
 				end
-			
+
 				if lava_y > jumpman_y + 1 then
 					-- The lava has engulfed Jumpman. Set status to dead
 					mem:write_i8(0x6200, 0)
@@ -142,9 +142,9 @@ function dklavapanic.startplugin()
 					end
 				end
 			end
-							
+
 			-- Add dancing flames above lava
-			for k, i in pairs({8, 24, 40, 56, 72, 88, 104, 120, 136, 152, 168, 184, 200, 216}) do
+			for _, i in pairs({8, 24, 40, 56, 72, 88, 104, 120, 136, 152, 168, 184, 200, 216}) do
 			  	if flicker() then
 					local adjust_y = math_random(-5, 4)
 					local flame_y = lava_y + adjust_y
@@ -156,7 +156,6 @@ function dklavapanic.startplugin()
 							flame_color = 0xffe8070a
 						end
 						-- Draw flame graphic
-						version_draw_box(flame_y + 0, i - 0, flame_y + 1, i - 1, flame_color, 0x0)
 						version_draw_box(flame_y + 1, i - 1, flame_y + 2, i - 2, flame_color, 0x0)
 						version_draw_box(flame_y + 2, i - 2, flame_y + 3, i - 3, flame_color, 0x0)
 						version_draw_box(flame_y + 3, i - 1, flame_y + 4, i - 2, flame_color, 0x0)
@@ -176,7 +175,7 @@ function dklavapanic.startplugin()
 			scr:draw_box(y1, x1, y2, x2, c1, c2)
 		end
 	end
-	
+
 	function get_jumpman_y()
 		-- calculate Jumpman Y position (at top of sprite)
 		local _y = mem:read_i8(0x6205)
@@ -186,7 +185,7 @@ function dklavapanic.startplugin()
 		-- allow lava to rise to sprite height + 1
 		return 8 - _y
 	end
-	
+
 	function flash()
 		-- Sync timing with the flashing 1UP
 		return math_fmod(mem:read_u8(0x601a), 32) <= 16
@@ -194,38 +193,30 @@ function dklavapanic.startplugin()
 
 	function flicker()
 		-- Sync the flickering flames
-		return math_random(2) == 1
+		return math_random(3) == 1
 	end
 
-	function draw_block(x, y, color1, color2)
-		-- Draw a single block
-		version_draw_box(x, y, x+8, y+8, color1, 0x0)
-		version_draw_box(x, y, x+1, y+8, color2, 0x0)
-		version_draw_box(x+6, y, x+7, y+8, color2, 0x0)
-		version_draw_box(x+2, y+2, x+6, y+6, 0xff000000, 0x0)
-		version_draw_box(x+3, y+1, x+5, y+7, 0xff000000, 0x0)
-	end
-
-	function block_text(text, x, y, color1, color2)
-		-- Write large block characters made up from individual blocks (using draw_block)
+	function block_text(text, y, x, color1, color2)
+		-- Write large block characters made up from individual blocks
 		local _dkblock = dkblock
-		local _x, _y, width, blocks = x, y, 0, ""
-		for i=1, string_len(text) do 
+		local _y, _x, width, blocks = y, x, 0, ""
+		for i=1, string_len(text) do
 			blocks = _dkblock[string_sub(text, i, i)]
 			width = math_floor(string_len(blocks) / 5)
 			for b=1, string_len(blocks) do
 				if string_sub(blocks, b, b) == "#" then
-					draw_block(_x, _y, color1, color2)
+					version_draw_box(_y, _x, _y+6, _x+8, color1, 0x0)
+					version_draw_box(_y+6, _x, _y+8, _x+8, color2, 0x0)
 				end
 				if math_fmod(b, width) == 0 then
-					_y = _y - (width - 1) * 8 
-					_x = _x - 8
+					_y = _y - 8
+					_x = _x - (width - 1) * 8
 				else
-					_y = _y + 8
+					_x = _x + 8
 				end
 			end
-			_x = x
-			_y = _y + (width * 8) + 8
+			_y = y
+			_x = _x + (width * 8) + 8
 		end
 	end
 
